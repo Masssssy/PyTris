@@ -79,7 +79,7 @@ class TetrisBlock:
 class GameMain():
     """game Main. entry point. handles intialization of game and graphics, as well as game loop."""
     done = False
-    color_bg = Color('darkgrey')  # or also: Color(50,50,50) , or: Color('#fefefe')
+    color_bg = Color('white')  # or also: Color(50,50,50) , or: Color('#fefefe')
     DROPTIMEREVENT = USEREVENT + 1
 
     def newBlock(self):
@@ -127,6 +127,20 @@ class GameMain():
         #blockedSpots.sort()
         #for b in blockedSpots:
 
+    def canMoveLeftRight(self, block, lr):
+        #left = 0, right = 0
+        if(lr == 0):
+            nextPos = (block.blocking[0] - 1, block.blocking[1])
+        elif(lr == 1):
+            nextPos = (block.blocking[0] + 1, block.blocking[1])
+        else:
+            nextPos = ""
+            print "invalid value"
+        for tetris_block in self.tetris_blocks:
+            if(nextPos[0] == tetris_block.getBlocking(0) and nextPos[1] == tetris_block.getBlocking(1)):
+                return False
+
+        return True
 
 
 
@@ -222,13 +236,13 @@ class GameMain():
                 if event.key == K_LEFT:
                     #Move block left
                     print "left pressed"
-                    if(self.active_block.blocking[0] > 1):
+                    if(self.active_block.blocking[0] > 1 and self.canMoveLeftRight(self.active_block, 0)):
                         self.active_block.left()
                         self.active_block.update()
                 if event.key == K_RIGHT:
                     #Move block right
                     print "right pressed"
-                    if(self.active_block.blocking[0] < 10):
+                    if(self.active_block.blocking[0] < 10 and self.canMoveLeftRight(self.active_block, 1)):
                         self.active_block.right()
                         self.active_block.update()
                 if event.key == K_SPACE:
