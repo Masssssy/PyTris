@@ -4,8 +4,17 @@ import pygame
 from pygame.locals import *
 import random
 
+class TetrisCombined:
+    #A combination of squares forming an actual tetris block
+
+    parts = []
+
+    #for i in range(4):
+        #parts.append(TetrisBlock)
+
 
 class TetrisBlock:
+    #A single tetris square, i.e part of a complete tetris block
     blocktype = random.randint(0, 6)
     active = True
 
@@ -14,7 +23,7 @@ class TetrisBlock:
 
     #A class representing a tetris block
     def __init__(self):
-        self.pos = (0, -40)
+        self.pos = (200, -40)
 
         #self.blocking = [(0,0), (0,0), (0,0), (0,0)]
         #Temp blocking list
@@ -39,14 +48,18 @@ class TetrisBlock:
             #block is at zero
             self.blocking = (self.blocking[0], 1)
 
-        print self.blocking[0]
-        print self.blocking[1]
+        #print self.blocking[0]
+        #print self.blocking[1]
 
     def move(self):
             self.pos = (self.pos[0], self.pos[1]+40)
 
     def getBlocking(self, x):
+        #x=0, x-axis, x=1 y-axis
         return self.blocking[x]
+
+    def getBlockingCoord(self):
+        return self.blocking[0] * self.blocking[1]
 
     def left(self):
         self.pos = (self.pos[0] - 40, self.pos[1])
@@ -72,11 +85,54 @@ class GameMain():
     def newBlock(self):
         #Move the active block into array of blocks and create a new block to fill active_block
         self.tetris_blocks.append(self.active_block)
+        #Check if rows are filled (i.e should be removed)
+        self.checkRows()
         self.active_block = TetrisBlock()
 
-    def canMove(self):
+    def removeLine(self, lineToRemove):
+        toRemove = []
+        print "remove line"
+        for tetris_block in self.tetris_blocks:
+            print "tetris block " + str(tetris_block.getBlocking(0)) + ", " + str(tetris_block.getBlocking(1))
+            if(tetris_block.getBlocking(1) == lineToRemove):
+                print "removed"
+                toRemove.append(tetris_block)
+
+        for remove in toRemove:
+            self.tetris_blocks.remove(remove)
+
+        #Row is removed move blocks above down
+        moved_block = True
+        while(moved_block):
+            moved_block = False
+            for tetris_block in self.tetris_blocks:
+                if(tetris_block.getBlocking(1) < lineToRemove):
+                    if(self.canMove(tetris_block)):
+                        print "moving block " + str(tetris_block.getBlocking(0)) + ", " + str(tetris_block.getBlocking(1))
+                        moved_block = True
+                        tetris_block.move()
+                        tetris_block.update()
+
+
+    def checkRows(self):
+        blockedSpots = []
+        for tetris_block in self.tetris_blocks:
+            blockedSpots.append(tetris_block.getBlocking(1))
+
+        for i in range(1,21):
+            count = blockedSpots.count(i)
+            if(count == 10):
+                self.removeLine(i)
+                print "remove line"
+        #blockedSpots.sort()
+        #for b in blockedSpots:
+
+
+
+
+    def canMove(self, block):
         #Next position of the active block
-        nextPos = (self.active_block.blocking[0], self.active_block.blocking[1]+1)
+        nextPos = (block.blocking[0], block.blocking[1]+1)
         if(nextPos[1] > 20):
             return False
         for tetris_block in self.tetris_blocks:
@@ -178,15 +234,17 @@ class GameMain():
                 if event.key == K_SPACE:
                     print "drop pressed"
                     #self.active_block.drop(self)
-                    while (self.canMove()):
+                    while (self.canMove(self.active_block)):
                         self.active_block.move()
                         self.active_block.update()
                     #When dropping a block a new one needs to be created
                     self.newBlock()
+                if event.key == K_BACKSPACE:
+                    self.removeLine(20)
 
             #If timer has passed drop time, move the active block down
             if event.type == self.DROPTIMEREVENT:
-                if(self.canMove()):
+                if(self.canMove(self.active_block)):
                     self.active_block.move()
                     #Update the blocks blocking properties
                     self.active_block.update()
@@ -196,7 +254,3 @@ class GameMain():
 if __name__ == "__main__":
     game = GameMain()
     game.main_loop()
-
-
-
-
