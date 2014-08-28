@@ -4,26 +4,14 @@ import pygame
 from pygame.locals import *
 import random
 
-class TetrisCombined:
-    #A combination of squares forming an actual tetris block
-
-    parts = []
-
-    #for i in range(4):
-        #parts.append(TetrisBlock)
-
-
 class TetrisBlock:
     #A single tetris square, i.e part of a complete tetris block
-    blocktype = random.randint(0, 6)
     active = True
-
-    #toprobabydo add different textures and sizes
-    texture = pygame.image.load("block.png")
+    remove = False
 
     #A class representing a tetris block
-    def __init__(self):
-        self.pos = (200, -40)
+    def __init__(self, posX, posY):
+        self.pos = (posX, -40)
 
         #self.blocking = [(0,0), (0,0), (0,0), (0,0)]
         #Temp blocking list
@@ -37,7 +25,6 @@ class TetrisBlock:
         else:
             #block is at zero
             self.blocking = (1, self.blocking[1])
-
 
         #Y-Axis
 
@@ -76,6 +63,63 @@ class TetrisBlock:
     def setPos(self, posX, posY):
         self.pos = (posX, posY)
 
+    def setRemoveFlag(self,x):
+        self.remove = x
+
+    def getRemoveFlag(self):
+        return self.remove
+
+class TetrisCombined:
+    #A combination of squares forming an actual tetris block
+    texture = pygame.image.load("block.png")
+    def __init__(self):
+        print "init block"
+
+        #Create 4 parts the block consist of
+        #temp rng for len
+        len = random.randint(1, 4)
+        self.parts = []
+        for i in range(len):
+            self.parts.append(TetrisBlock(i*40, 20))
+
+
+        #The block part texture
+        color = random.randint(1, 4)
+        print "color: " + str(color)
+        if(color == 1):
+            print "color 1 set"
+            self.texture = pygame.image.load("block.png")
+        if(color == 2):
+            print "color 2 set"
+            self.texture = pygame.image.load("block2.png")
+        if(color == 3):
+            print "color 3 set"
+            self.texture = pygame.image.load("block3.png")
+        if(color == 4):
+            print "color 4 set"
+            self.texture = pygame.image.load("block4.png")
+
+    #Randomize block type
+    blocktype = random.randint(0, 6)
+
+    def getParts(self):
+        return self.parts
+
+    def setParts(self, parts):
+        self.parts = parts
+
+    def move(self):
+        for part in self.parts:
+            part.move()
+
+    def update(self):
+        for part in self.parts:
+            part.update()
+
+    def getTexture(self):
+        return self.texture
+
+
 class GameMain():
     """game Main. entry point. handles intialization of game and graphics, as well as game loop."""
     done = False
@@ -87,37 +131,43 @@ class GameMain():
         self.tetris_blocks.append(self.active_block)
         #Check if rows are filled (i.e should be removed)
         self.checkRows()
-        self.active_block = TetrisBlock()
+        self.active_block = TetrisCombined()
 
     def removeLine(self, lineToRemove):
-        toRemove = []
         print "remove line"
         for tetris_block in self.tetris_blocks:
-            print "tetris block " + str(tetris_block.getBlocking(0)) + ", " + str(tetris_block.getBlocking(1))
-            if(tetris_block.getBlocking(1) == lineToRemove):
-                print "removed"
-                toRemove.append(tetris_block)
+            #print "tetris block " + str(tetris_block.getBlocking(0)) + ", " + str(tetris_block.getBlocking(1))
+            for part in tetris_block.getParts():
+                if(part.getBlocking(1) == lineToRemove):
+                    print "flag to remove x:" + str(part.getBlocking(0)) + "y:" + str(part.getBlocking(1))
+                    part.setRemoveFlag(True)
 
-        for remove in toRemove:
-            self.tetris_blocks.remove(remove)
+#TODO THIS FUNCTION DOES NOT DELETE ALL PARTS MARKED FOR DELETION
+        for tetris_block in self.tetris_blocks:
+           for part in tetris_block.getParts()[::-1]:
+               if(part.getRemoveFlag() == True):
+                    print "actually remove  x:" + str(part.getBlocking(0)) + "y:" + str(part.getBlocking(1))
+                    tetris_block.getParts().remove(part)
 
         #Row is removed move blocks above down
         moved_block = True
         while(moved_block):
             moved_block = False
             for tetris_block in self.tetris_blocks:
-                if(tetris_block.getBlocking(1) < lineToRemove):
-                    if(self.canMove(tetris_block)):
-                        print "moving block " + str(tetris_block.getBlocking(0)) + ", " + str(tetris_block.getBlocking(1))
-                        moved_block = True
-                        tetris_block.move()
-                        tetris_block.update()
+                for part in tetris_block.getParts():
+                    if(part.getBlocking(1) < lineToRemove):
+                        if(self.canMove(tetris_block)):
+                            print "moving block " + str(part.getBlocking(0)) + ", " + str(part.getBlocking(1))
+                            moved_block = True
+                            tetris_block.move()
+                            tetris_block.update()
 
 
     def checkRows(self):
         blockedSpots = []
         for tetris_block in self.tetris_blocks:
-            blockedSpots.append(tetris_block.getBlocking(1))
+            for tetris_part in tetris_block.getParts():
+                blockedSpots.append(tetris_part.getBlocking(1))
 
         for i in range(1,21):
             count = blockedSpots.count(i)
@@ -137,8 +187,9 @@ class GameMain():
             nextPos = ""
             print "invalid value"
         for tetris_block in self.tetris_blocks:
-            if(nextPos[0] == tetris_block.getBlocking(0) and nextPos[1] == tetris_block.getBlocking(1)):
-                return False
+            for part in tetris_block.getParts():
+                if(nextPos[0] == part.getBlocking(0) and nextPos[1] == part.getBlocking(1)):
+                    return False
 
         return True
 
@@ -146,12 +197,14 @@ class GameMain():
 
     def canMove(self, block):
         #Next position of the active block
-        nextPos = (block.blocking[0], block.blocking[1]+1)
-        if(nextPos[1] > 20):
-            return False
-        for tetris_block in self.tetris_blocks:
-            if(nextPos[0] == tetris_block.getBlocking(0) and nextPos[1] == tetris_block.getBlocking(1)):
+        for part in block.getParts():
+            nextPos = (part.blocking[0], part.blocking[1]+1)
+            if(nextPos[1] > 20):
                 return False
+            for tetris_block in self.tetris_blocks:
+                for part in tetris_block.getParts():
+                    if(nextPos[0] == part.getBlocking(0) and nextPos[1] == part.getBlocking(1)):
+                        return False
 
         return True
 
@@ -166,13 +219,21 @@ class GameMain():
             limit_fps = boolean toggles capping FPS, to share cpu, or let it run free.
             now = current time in Milliseconds. ( 1000ms = 1second)
         """
+
+        #Init sound mixer
+        pygame.mixer.init()
+        pygame.mixer.pre_init(44100, -16, 2, 2048)
+
         pygame.init()
         #Better random
         random.seed();
 
-        posX = 200
+        #Load tetris song
+        pygame.mixer.music.load("tetris.ogg")
+        pygame.mixer.music.play(loops=-1)
+
         self.tetris_blocks = []
-        self.active_block = TetrisBlock()
+        self.active_block = TetrisCombined()
 
 
         # save w, h, and screen
@@ -207,12 +268,15 @@ class GameMain():
         self.screen.fill(self.color_bg)
 
         #Render the active block
-        self.screen.blit(self.active_block.texture , (self.active_block.pos[0], self.active_block.pos[1]))
+        i = 0
+        for blockPart in self.active_block.getParts():
+            self.screen.blit(self.active_block.getTexture(), (blockPart.pos[0], blockPart.pos[1]))
+            i += 1
+
         #Render all other tetris blocks
         for tetris_block in self.tetris_blocks:
-            self.screen.blit(tetris_block.texture, (tetris_block.pos[0],tetris_block.pos[1]))
-
-        # draw your stuff here. sprites, gui, etc....        
+            for part in tetris_block.getParts():
+                self.screen.blit(tetris_block.getTexture(), (part.pos[0],part.pos[1]))
 
         pygame.display.flip()
 
@@ -236,15 +300,17 @@ class GameMain():
                 if event.key == K_LEFT:
                     #Move block left
                     print "left pressed"
-                    if(self.active_block.blocking[0] > 1 and self.canMoveLeftRight(self.active_block, 0)):
-                        self.active_block.left()
-                        self.active_block.update()
+                    for part in self.active_block.getParts():
+                        if(part.blocking[0] > 1 and self.canMoveLeftRight(part, 0)):
+                            part.left()
+                            part.update()
                 if event.key == K_RIGHT:
                     #Move block right
                     print "right pressed"
-                    if(self.active_block.blocking[0] < 10 and self.canMoveLeftRight(self.active_block, 1)):
-                        self.active_block.right()
-                        self.active_block.update()
+                    for part in self.active_block.getParts():
+                        if(part.blocking[0] < 10 and self.canMoveLeftRight(part, 1)):
+                            part.right()
+                            part.update()
                 if event.key == K_SPACE:
                     print "drop pressed"
                     #self.active_block.drop(self)
