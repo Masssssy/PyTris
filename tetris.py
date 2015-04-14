@@ -285,6 +285,7 @@ class GameMain():
                 return False
             for tetris_block in self.tetris_blocks:
                 for part in tetris_block.getParts():
+                    #Dont check if colliding with parts in same "TetrisCombined", continue
                     if part.getParent() == block.getId():
                        print "continue"
                        continue
