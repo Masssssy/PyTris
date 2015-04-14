@@ -287,7 +287,6 @@ class GameMain():
                 for part in tetris_block.getParts():
                     #Dont check if colliding with parts in same "TetrisCombined", continue
                     if part.getParent() == block.getId():
-                       print "continue"
                        continue
                     if(nextPos[0] == part.getBlockingX() and nextPos[1] == part.getBlockingY()):
                         print "false"
