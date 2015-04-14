@@ -11,8 +11,9 @@ class TetrisPart:
     remove = False
 
     #A class representing a tetris block
-    def __init__(self, posX, posY):
-        self.pos = (posX, -40)
+    def __init__(self, posX, posY, parent):
+        self.pos = (posX, posY)
+        self.parent = parent
 
         self.blocking = (0 , 0)
         #Update immediately to make sure nothing shady happens in the first timer
@@ -74,6 +75,9 @@ class TetrisPart:
     def getRemoveFlag(self):
         return self.remove
 
+    def getParent(self):
+        return self.parent
+
 class TetrisCombined:
     #A combination of squares forming an actual tetris block
     texture = pygame.image.load("block.png")
@@ -81,11 +85,55 @@ class TetrisCombined:
         print "init block"
 
         #Create 4 parts the block consist of
-        #temp rng for len
-        len = random.randint(1, 4)
+        #Generate random numebr for blocktype (total 7 blocks)
+        blocktype = random.randint(0, 6)
+
+        #Get the unique id of this object
+        self.id = id(self)
+
         self.parts = []
-        for i in range(len):
-            self.parts.append(TetrisPart(i*40, 20))
+        #Hatch block
+        if(blocktype == 0):
+            self.parts.append(TetrisPart(0,-40, self.id))
+            self.parts.append(TetrisPart(40,-40, self.id))
+            self.parts.append(TetrisPart(0,0, self.id))
+            self.parts.append(TetrisPart(0,40, self.id))
+        #Straight block
+        if(blocktype == 1):
+            self.parts.append(TetrisPart(0,-40, self.id))
+            self.parts.append(TetrisPart(40,-40, self.id))
+            self.parts.append(TetrisPart(80,-40, self.id))
+            self.parts.append(TetrisPart(120,-40, self.id))
+        #Inverted hatch
+        if(blocktype == 2):
+            self.parts.append(TetrisPart(0,-40, self.id))
+            self.parts.append(TetrisPart(40,-40, self.id))
+            self.parts.append(TetrisPart(40,0, self.id))
+            self.parts.append(TetrisPart(40,40, self.id))
+        # 3 + tip
+        if(blocktype == 3):
+            self.parts.append(TetrisPart(0,0, self.id))
+            self.parts.append(TetrisPart(40,0, self.id))
+            self.parts.append(TetrisPart(80,0, self.id))
+            self.parts.append(TetrisPart(40,-40, self.id))
+        #Square
+        if(blocktype == 4):
+            self.parts.append(TetrisPart(0,-40, self.id))
+            self.parts.append(TetrisPart(0,0, self.id))
+            self.parts.append(TetrisPart(40,-40, self.id))
+            self.parts.append(TetrisPart(40,0, self.id))
+        #Squiggly 
+        if(blocktype == 5):
+            self.parts.append(TetrisPart(40,-40, self.id))
+            self.parts.append(TetrisPart(80,-40, self.id))
+            self.parts.append(TetrisPart(0,0, self.id))
+            self.parts.append(TetrisPart(40,0, self.id))
+        #Squiggly inverted
+        if(blocktype == 6):
+            self.parts.append(TetrisPart(0,-40, self.id))
+            self.parts.append(TetrisPart(40,-40, self.id))
+            self.parts.append(TetrisPart(40,0, self.id))
+            self.parts.append(TetrisPart(80,0, self.id))
 
 
         #The block part texture
@@ -118,7 +166,6 @@ class TetrisCombined:
            for part in self.parts:
                for blockingSpot in blockingSpots:
                     if(part.getBlockingX()-1 == blockingSpot[0] and part.getBlockingY() == blockingSpot[1]):
-                        print "mhm yes"
                         return False
        elif(lr == 1):
             for part in self.parts:
@@ -168,6 +215,9 @@ class TetrisCombined:
 
     def getTexture(self):
         return self.texture
+
+    def getId(self):
+        return self.id
 
 
 class GameMain():
@@ -235,7 +285,11 @@ class GameMain():
                 return False
             for tetris_block in self.tetris_blocks:
                 for part in tetris_block.getParts():
+                    if part.getParent() == block.getId():
+                       print "continue"
+                       continue
                     if(nextPos[0] == part.getBlockingX() and nextPos[1] == part.getBlockingY()):
+                        print "false"
                         return False
 
         return True
